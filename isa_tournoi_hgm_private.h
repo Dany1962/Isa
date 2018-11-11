@@ -1,0 +1,23 @@
+/* THIS FILE WILL BE OVERWRITTEN BY DEV-C++ */
+/* DO NOT EDIT ! */
+
+#ifndef ISA_TOURNOI_HGM_PRIVATE_H
+#define ISA_TOURNOI_HGM_PRIVATE_H
+
+/* VERSION DEFINITIONS */
+#define VER_STRING	"1.6.0.93"
+#define VER_MAJOR	1
+#define VER_MINOR	6
+#define VER_RELEASE	0
+#define VER_BUILD	93
+#define COMPANY_NAME	"Dany"
+#define FILE_VERSION	"1.6.0.93"
+#define FILE_DESCRIPTION	"Developed using the Dev-C++ IDE"
+#define INTERNAL_NAME	""
+#define LEGAL_COPYRIGHT	""
+#define LEGAL_TRADEMARKS	""
+#define ORIGINAL_FILENAME	""
+#define PRODUCT_NAME	"ISA CHESS HGM"
+#define PRODUCT_VERSION	"1.6.0.93"
+
+#endif /*ISA_TOURNOI_HGM_PRIVATE_H*/
