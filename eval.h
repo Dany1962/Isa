@@ -328,33 +328,13 @@ static const int pop[2][8] =
     {0, 70, 46, 28, 16, 10, 10, 0},
     {0, 10, 10, 16, 28, 46, 70, 0}
 };
-static const int peg[2][8] =
+static const int bonus_row[2][8] =
 {
-    {0, 100, 55, 36, 20, 12,  12, 0},
-    {0,  12, 12, 20, 36, 55, 100, 0}
+    { 0,  10,   6,  3,  1,   0,   0,  0},
+    { 0,   0,   0,  1,  3,   6,  10,  0}
 };
-
 static const int sq_promo_blanc[8] = { 0, 1, 2, 3, 4, 5, 6, 7};
 static const int sq_promo_noir[8]  = {56,57,58,59,60,61,62,63};
-
-static const int table_distances[8][8] =
-{  // distances roi ennemi --> case devant le pion
-   // 0    1    2   3   4   5   6   7
-   {  0,   3,   4,  6,  8, 11, 14, 18},//dra = 0
-   {  0,   0,   3,  4,  6,  8, 11, 14},//dra = 1
-   { -4,  -3,   0,  3,  4,  6,  8, 11},//dra = 2
-   { -6,  -4,  -3,  0,  3,  4,  6,  8},//dra = 3
-   { -8,  -6,  -4, -3,  0,  3,  4,  6},//dra = 4
-   {-11,  -8,  -6, -4, -3,  0,  3,  4},//dra = 5
-   {-14, -11,  -8, -6, -4, -3,  0,  3},//dra = 6
-   {-18, -14, -11, -8, -6, -4, -3,  0} //dra = 7
-};
-
-static const int coef_row[2][8] =
-{
-    {0, 12, 9, 6, 4, 2,  1, 0},
-    {0,  1, 2, 4, 6, 9, 12, 0}
-};
 
 int eval_pions_op[2];  //table de sauvegarde de l'eval des pions (pour hash table pions)
 int eval_pions_eg[2];  //table de sauvegarde de l'eval des pions (pour hash table pions)
@@ -488,6 +468,5 @@ int draw_recognizer();
 bool finale_KBNK();
 bool finale_KBBK();
 bool draw_passer_ah();
-int nb_atk_case(int sqd, int current_side, int sqp);
 #endif // EVAL_H
 //fin eval.h

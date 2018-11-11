@@ -50,8 +50,6 @@ int eval()
     int pattern_blanc = 0;
     int pattern_noir  = 0;
     int tempo_bonus = (side == BLANC ? 10 : -10);
-    int pce;
-    int fi;
 
     memset(somme_attaques,0,sizeof(somme_attaques));
     memset(nombre_attaquants,0,sizeof(nombre_attaquants));
@@ -111,23 +109,22 @@ int eval()
     }
 
     //boucle les 64 cases de l'échiquier
-    for (cp=0; cp<16; ++cp)
+    for (cp=0;cp<16;++cp)
     {
         i = plist[BLANC][cp];
         if(i != VIDE)
         {
-            pce = piece[i];
             if(e_valide)
-                printf("--------------%c%s-------------\n",pieceName[pce],coord_une_case(i));
+                printf("--------------%c%s-------------\n",pieceName[piece[i]],coord_une_case(i));
             //Score PST
-            score_blanc_debut += pst_op[pce][i];
-            score_blanc_fin += pst_eg[pce][i];
+            score_blanc_debut += pst_op[piece[i]][i];
+            score_blanc_fin += pst_eg[piece[i]][i];
             //Score Matériel
-            score_blanc_debut += materiel_op[pce];
-            score_blanc_fin   += materiel_eg[pce];
+            score_blanc_debut += materiel_op[piece[i]];
+            score_blanc_fin   += materiel_eg[piece[i]];
             if(e_valide)
-                printf("Psqt                : (%d , %d)\n",pst_op[pce][i],pst_eg[pce][i]);
-            switch(pce)
+                printf("Psqt                : (%d , %d)\n",pst_op[piece[i]][i],pst_eg[piece[i]][i]);
+            switch(piece[i])
             {
             case PION:
                 if(eval_pion_valide == valINCONNUE)
@@ -155,19 +152,17 @@ int eval()
         i = plist[NOIR][cp];
         if(i != VIDE)
         {
-            pce = piece[i];
-            fi = flip[i];
             if(e_valide)
-                printf("--------------%c%s-------------\n",pieceName[pce],coord_une_case(i));
+                printf("--------------%c%s-------------\n",pieceName[piece[i]],coord_une_case(i));
             //Score PST
-            score_noir_debut += pst_op[pce][fi];
-            score_noir_fin += pst_eg[piece[i]][fi];
+            score_noir_debut += pst_op[piece[i]][flip[i]];
+            score_noir_fin += pst_eg[piece[i]][flip[i]];
             //Score Matériel
-            score_noir_debut += materiel_op[pce];
-            score_noir_fin   += materiel_eg[pce];
+            score_noir_debut += materiel_op[piece[i]];
+            score_noir_fin   += materiel_eg[piece[i]];
             if(e_valide)
-                printf("Psqt                : (%d , %d)\n",pst_op[pce][fi],pst_eg[pce][fi]);
-            switch(pce)
+                printf("Psqt                : (%d , %d)\n",pst_op[piece[i]][flip[i]],pst_eg[piece[i]][flip[i]]);
+            switch(piece[i])
             {
             case PION:
                 if(eval_pion_valide == valINCONNUE)
@@ -326,17 +321,11 @@ void eval_pion_blanc(int sq)
     int nbpn = 0;
     int sqd = sq - 8;
     int score_op = 0,score_eg = 0;
-    int pla = (nb_pieces[NOIR][DAME] + nb_pieces[NOIR][TOUR]); //nbre pieces lourdes adverses
-    bool opn = ((bitboard_colonne[col] & bitboard_pion[NOIR]) == 0);
 
     //Test  si pion open (pas de pion adverse sur la même
     //colonne) pour eval isolé et arriéré
-    if(opn && pla)
-    {
+    if((bitboard_colonne[col] & bitboard_pion[NOIR]) == 0)
         open = VRAI;
-        if(e_valide)
-            printf("pion open\n");
-    }
 
     //Pion isolé ? PENALITE
     if((BB_colonne[COL(sq)] & bitboard_pion[BLANC]) == 0 )
@@ -416,33 +405,24 @@ void eval_pion_blanc(int sq)
     //Validation du pion passé
     if(pion_passe(sq, BLANC, NOIR))
     {
-        int atk,def;
-        int dra,dre,score_proxi_roi;
-
         //Bonus rangée dépendant
+        //score op = juste bonus row
+        //score eg = bonus row + bonus distances rois
         passe_op += pop[BLANC][row];
-        passe_eg += peg[BLANC][row];
+        passe_eg += (20 + ((120 + d1 - d2) * bonus_row[BLANC][row] / 10));
         if(e_valide)
-            printf("Bonus row : (%d,%d)\n",pop[BLANC][row],peg[BLANC][row]);
+            printf("Bonus row : (%d,%d)\n",passe_op,passe_eg);
 
-        //bonus case vide devant le pion
-        if(piece[sq-8] == VIDE)
+        //Bonus case devant le pion vide et non attaquée
+        if((piece[sqd] == VIDE) && (!roi_attaque(sqd,BLANC)))
         {
-            passe_op += (pop[BLANC][row] / 5);
-            passe_eg += (peg[BLANC][row] / 5);
+            passe_op += free_op[BLANC][row];
+            passe_eg += free_eg[BLANC][row];
             if(e_valide)
-                printf("Bonus case vide devant : (%d,%d)\n",(pop[BLANC][row] / 5),(peg[BLANC][row] / 5));
+                printf("Bonus free : (%d,%d)\n",free_op[BLANC][row],free_eg[BLANC][row]);
         }
 
-        //bonus controle case devant (ou penalité)
-        atk = nb_atk_case(sq-8, BLANC, sq);
-        def = nb_atk_case(sq-8, NOIR, sq);
-        passe_op += ((def - atk) * 3);
-        passe_eg += ((def - atk) * 6);
-        if(e_valide)
-            printf("Bonus controle case devant : (%d,%d) [%d,%d]\n",((def - atk) * 3),((def - atk) * 6),def,atk);
-
-        //Pion passé instoppable (règle du carré) + bonus proximité du roi
+        //Pion passé instoppable (règle du carré)
         if(PHASE == 24)
         {
             //règle de carré
@@ -460,19 +440,9 @@ void eval_pion_blanc(int sq)
                 if(e_valide)
                     printf("  Passe Instoppable 2 : (%d)\n",INSTOPPABLE2);
             }
-            //bonus proximité du roi
-            dra = chebi[pos_roi[BLANC]][sq-8];
-            dre = chebi[pos_roi[NOIR]][sq-8];
-            score_proxi_roi = (table_distances[dra][dre] * coef_row[BLANC][row]);
-            if(e_valide)
-                printf("Bonus proximite roi : %d  (dra = %d,dre = %d)  (table = %d) (coef row = %d) \n",
-                       score_proxi_roi,dra,dre,table_distances[dra][dre],coef_row[BLANC][row]);
-            passe_eg += score_proxi_roi;
         }
         score_op += passe_op;
         score_eg += passe_eg;
-        if(e_valide)
-            printf("Score pion passe : (%d,%d)\n",passe_op,passe_eg);
     }
 
     //Si pion pas passé , test si pion candidat
@@ -480,7 +450,7 @@ void eval_pion_blanc(int sq)
     //supérieur ou egal auxx pions adverses sur les col adjacentes                                          *
     else
     {
-        if(opn)
+        if(open)
         {
             if(e_valide)
                 printf("Le pion n'est pas passe mais open\n");
@@ -504,23 +474,19 @@ void eval_pion_noir(int sq)
     int row = ROW(sq);
     int col = COL(sq);
     int passe_op = 0,passe_eg = 0;
+    int d1 = (20 * chebi[pos_roi[BLANC]][(sq + 8)]);
+    int d2 = (5 * chebi[pos_roi[NOIR]][(sq + 8)]);
     U64 pb = (bitboard_candidat[col] & bitboard_pion[BLANC]);
     U64 pn = (bitboard_candidat[col] & bitboard_pion[NOIR]);
     int nbpb = 0;
     int nbpn = 0;
     int sqd = sq + 8;
     int score_op = 0,score_eg = 0;
-    int pla = (nb_pieces[BLANC][DAME] + nb_pieces[BLANC][TOUR]); //nbre pieces lourdes adverses
-    bool opn = ((bitboard_colonne[col] & bitboard_pion[BLANC]) == 0);
 
     //Test  si pion open (pas de pion adverse sur la même
     //colonne) pour eval isolé et arriéré
-    if(opn && pla)
-    {
+    if((bitboard_colonne[col] & bitboard_pion[BLANC]) == 0)
         open = VRAI;
-        if(e_valide)
-            printf("pion open\n");
-    }
 
     //Pion isolé ? PENALITE
     if((BB_colonne[COL(sq)] & bitboard_pion[NOIR]) == 0)
@@ -600,33 +566,24 @@ void eval_pion_noir(int sq)
     //Validation du pion passé
     if(pion_passe(sq, NOIR, BLANC))
     {
-        int atk,def;
-        int dra,dre,score_proxi_roi;
-
         //Bonus rangée dépendant
+        //score op = juste bonus row
+        //score eg = bonus row + bonus distances rois
         passe_op += pop[NOIR][row];
-        passe_eg += peg[NOIR][row];
+        passe_eg += (20 + ((120 + d1 - d2) * bonus_row[NOIR][row] / 10));
         if(e_valide)
-            printf("Bonus row : (%d,%d)\n",pop[NOIR][row],peg[NOIR][row]);
+            printf("Bonus row : (%d,%d)\n",passe_op,passe_eg);
 
-        //bonus case vide devant le pion
-        if(piece[sq+8] == VIDE)
+        //Bonus case devant le pion vide et non attaquée
+        if((piece[sqd] == VIDE) && (!roi_attaque(sqd,NOIR)))
         {
-            passe_op += (pop[NOIR][row] / 5);
-            passe_eg += (peg[NOIR][row] / 5);
+            passe_op += free_op[NOIR][row];
+            passe_eg += free_eg[NOIR][row];
             if(e_valide)
-                printf("Bonus case vide devant : (%d,%d)\n",(pop[NOIR][row] / 5),(peg[NOIR][row] / 5));
+                printf("Bonus free : (%d,%d)\n",free_op[NOIR][row],free_eg[NOIR][row]);
         }
 
-        //bonus controle case devant (ou penalité)
-        atk = nb_atk_case(sq+8, NOIR, sq);
-        def = nb_atk_case(sq+8, BLANC, sq);
-        passe_op += ((def - atk) * 3);
-        passe_eg += ((def - atk) * 6);
-        if(e_valide)
-            printf("Bonus controle case devant : (%d,%d) [%d,%d]\n",((def - atk) * 3),((def - atk) * 6),def,atk);
-
-        //Pion passé instoppable (règle du carré)  + bonus proximité du roi
+        //Pion passé instoppable (règle du carré)
         if(PHASE == 24)
         {
             //règle du carré
@@ -644,20 +601,9 @@ void eval_pion_noir(int sq)
                 if(e_valide)
                     printf("  Passe Instoppable 2 : (%d)\n",INSTOPPABLE2);
             }
-            //bonus proximité du roi
-            dra = chebi[pos_roi[NOIR]][sq+8];
-            dre = chebi[pos_roi[BLANC]][sq+8];
-            score_proxi_roi = (table_distances[dra][dre] * coef_row[NOIR][row]);
-            if(e_valide)
-                printf("Bonus proximite roi : %d  (dra = %d,dre = %d)  (table = %d) (coef row = %d) \n",
-                       score_proxi_roi,dra,dre,table_distances[dra][dre],coef_row[NOIR][row]);
-            passe_eg += score_proxi_roi;
         }
         score_op += passe_op;
         score_eg += passe_eg;
-
-        if(e_valide)
-            printf("Score pion passe : (%d,%d)\n",passe_op,passe_eg);
     }
 
     //Si pion pas passé , test si pion candidat
@@ -665,7 +611,7 @@ void eval_pion_noir(int sq)
     //supérieur ou egal auxx pions adverses sur les col adjacentes                                          *
     else
     {
-        if(opn)
+        if(open)
         {
             if(e_valide)
                 printf("Le pion n'est pas passe mais open\n");
@@ -767,12 +713,12 @@ int mobilite_cavalier(int sq, int coul)
 //autour du roi adverse
 int safety_cavalier(int sq, int coul)
 {
-    int score = 0;
-    int y;
-    int col = COL(sq);
-    int ra = pos_roi[coul];
+   int score = 0;
+   int y;
+   int col = COL(sq);
+   int ra = pos_roi[coul];
 
-    y = sq - 6;
+   y = sq - 6;
     if (y >= 0 && col < 6)
         score += (champ_roi[ra][y] * KCAVALIER);
     y = sq - 10;
@@ -1455,198 +1401,4 @@ bool draw_passer_ah()
             return FAUX;
     }
     return FAUX;
-}
-
-int nb_atk_case(int sqd, int current_side, int sqp)
-{
-    int k = sqd;    //case devant le pion passé
-    int p = sqp;    //case du pion passé
-    int h,y;
-    int row = ROW(k);
-    int col = COL(k);
-    int xside = OPP(current_side);
-    int score = 0;
-    int val[7] = {0, 9, 7, 7, 5, 3, 1};
-
-    //-----------------------------------------------------------------------------------------------------------------
-    //                                  coups d'échecs cavalier
-    if (col > 0 && row > 1 && couleur[k - 17] == xside && piece[k - 17] == CAVALIER)
-        score += val[CAVALIER];
-    if (col < 7 && row > 1 && couleur[k - 15] == xside && piece[k - 15] == CAVALIER)
-        score += val[CAVALIER];
-    if (col > 1 && row > 0 && couleur[k - 10] == xside && piece[k - 10] == CAVALIER)
-        score += val[CAVALIER];
-    if (col < 6 && row > 0 && couleur[k - 6] == xside && piece[k - 6] == CAVALIER)
-        score += val[CAVALIER];
-    if (col > 1 && row < 7 && couleur[k + 6] == xside && piece[k + 6] == CAVALIER)
-        score += val[CAVALIER];
-    if (col < 6 && row < 7 && couleur[k + 10] == xside && piece[k + 10] == CAVALIER)
-        score += val[CAVALIER];
-    if (col > 0 && row < 6 && couleur[k + 15] == xside && piece[k + 15] == CAVALIER)
-        score += val[CAVALIER];
-    if (col < 7 && row < 6 && couleur[k + 17] == xside && piece[k + 17] == CAVALIER)
-        score += val[CAVALIER];
-    /* Check horizontal and vertical lines for attacROI of DAME, TOUR, ROI */
-    /* go down */
-    y = k + 8;
-    if (y < 64)
-    {
-        if (couleur[y] == xside && (piece[y] == ROI || piece[y] == DAME || piece[y] == TOUR))
-            score += val[piece[y]];
-        if (piece[y] == VIDE || y == sqp)
-        {
-            for (y += 8; y < 64; y += 8)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == TOUR))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-            }
-        }
-    }
-    /* go left */
-    y = k - 1;
-    h = k - col;
-    if (y >= h)
-    {
-        if (couleur[y] == xside && (piece[y] == ROI || piece[y] == DAME || piece[y] == TOUR))
-            score += val[piece[y]];
-        if (piece[y] == VIDE || y ==sqp)
-        {
-            for (y--; y >= h; y--)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == TOUR))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-            }
-        }
-    }
-    /* go right */
-    y = k + 1;
-    h = k - col + 7;
-    if (y <= h)
-    {
-        if (couleur[y] == xside && (piece[y] == ROI || piece[y] == DAME || piece[y] == TOUR))
-            score += val[piece[y]];
-        if (piece[y] == VIDE || y == sqp)
-        {
-            for (y++; y <= h; y++)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == TOUR))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-            }
-        }
-    }
-    /* go up */
-    y = k - 8;
-    if (y >= 0)
-    {
-        if (couleur[y] == xside && (piece[y] == ROI || piece[y] == DAME || piece[y] == TOUR))
-            score += val[piece[y]];
-        if (piece[y] == VIDE || y == sqp)
-        {
-            for (y -= 8; y >= 0; y -= 8)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == TOUR))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-            }
-        }
-    }
-    /* Check diagonal lines for attacROI of DAME, FOU, ROI, PION */
-    /* go right down */
-    y = k + 9;
-    if (y < 64 && COL(y) != 0)
-    {
-        if (couleur[y] == xside)
-        {
-            if (piece[y] == ROI || piece[y] == DAME || piece[y] == FOU)
-                score += val[piece[y]];
-            if (current_side == NOIR && piece[y] == PION)
-                score += val[PION];
-        }
-        if (piece[y] == VIDE || y == sqp)
-        {
-            for (y += 9; y < 64 && COL(y) != 0; y += 9)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == FOU))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-            }
-        }
-    }
-    /* go left down */
-    y = k + 7;
-    if (y < 64 && COL(y) != 7)
-    {
-        if (couleur[y] == xside)
-        {
-            if (piece[y] == ROI || piece[y] == DAME || piece[y] == FOU)
-                score += val[piece[y]];
-            if (current_side == NOIR && piece[y] == PION)
-                score += val[PION];
-        }
-        if (piece[y] == VIDE || y == sqp)
-        {
-            for (y += 7; y < 64 && COL(y) != 7; y += 7)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == FOU))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-
-            }
-        }
-    }
-    /* go left up */
-    y = k - 9;
-    if (y >= 0 && COL(y) != 7)
-    {
-        if (couleur[y] == xside)
-        {
-            if (piece[y] == ROI || piece[y] == DAME || piece[y] == FOU)
-                score += val[piece[y]];
-            if (current_side == BLANC && piece[y] == PION)
-                score += val[PION];
-        }
-        if (piece[y] == VIDE || y == sqp)
-        {
-            for (y -= 9; y >= 0 && COL(y) != 7; y -= 9)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == FOU))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-
-            }
-        }
-    }
-    /* go right up */
-    y = k - 7;
-    if (y >= 0 && COL(y) != 0)
-    {
-        if (couleur[y] == xside)
-        {
-            if (piece[y] == ROI || piece[y] == DAME || piece[y] == FOU)
-                score += val[piece[y]];
-            if (current_side == BLANC && piece[y] == PION)
-                score += val[PION];
-        }
-        if (piece[y] == VIDE || y == sqp)
-        {
-            for (y -= 7; y >= 0 && COL(y) != 0; y -= 7)
-            {
-                if (couleur[y] == xside && (piece[y] == DAME || piece[y] == FOU))
-                    score += val[piece[y]];
-                if (piece[y] != VIDE)
-                    break;
-            }
-        }
-    }
-    return score;
 }
