@@ -3,7 +3,7 @@
 #include "deftypes.h"
 
 //-------------------------------------------------------------------------------------
-//            bitboards pour l'évaluation des pions passés , doublés , isolés
+//            bitboards for passers , doubled, isolated and backwards evaluation
 //-------------------------------------------------------------------------------------
 static U64 bitboard_front[2][64] =
 {
@@ -54,7 +54,7 @@ static const U64 arr_file[8] =
     0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080
 };
 //-------------------------------------------------------------------------------------
-//            bitboard pour l'évaluation des tours et dames sur colonnes
+//            bitboard pour l'Ã©valuation des tours et dames sur colonnes
 //-------------------------------------------------------------------------------------
 static const U64 bitboard_colonne[8] =
 {
@@ -81,7 +81,7 @@ static const U64 bitboard_diag_DG[15] =
 };
 
 //-------------------------------------------------------------------------------------
-//            bitboards pour l'évaluation des pions arriérés
+//            bitboards pour l'Ã©valuation des pions arriÃ©rÃ©s
 //-------------------------------------------------------------------------------------
 static const U64 mask_backwards[2][64] =
 {
