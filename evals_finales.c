@@ -23,13 +23,13 @@ int eval_KBNK()
     if(e_valide)
         printf("finale KBN vs K\n");
 
-    //couleur du roi dépouillé ("bare king")
+    //couleur du roi dÃ©pouillÃ© ("bare king")
     if(materiel[BLANC] == VAL_ROI)
         bare_king = BLANC;
     else
         bare_king = NOIR;
 
-    //déterminer la position du F et C de l'autre couleur (gagnante)
+    //dÃ©terminer la position du F et C de l'autre couleur (gagnante)
     for(i=0; i<64; ++i)
     {
         if(couleur[i] == OPP(bare_king))
@@ -55,14 +55,11 @@ int eval_KBNK()
         printf("Dist cavalier:  %6d\n",dist_cavalier_roi);
     }
 
-    if(bare_king == BLANC)
+    
         eval = ((materiel[BLANC] - materiel[NOIR]) -
                  ((2 * pst_fou_sq[couleur_sq_fou][pos_roi[bare_king]]) + dist_rois +
                  dist_fou + dist_cavalier_roi));
-    else
-        eval = ((materiel[BLANC] - materiel[NOIR]) +
-                 ((2 * pst_fou_sq[couleur_sq_fou][pos_roi[bare_king]]) + dist_rois +
-                 dist_fou + dist_cavalier_roi));
+    
 
     if(side == BLANC)
         return eval;
@@ -82,7 +79,7 @@ int eval_KBBK()
     if(e_valide)
         printf("finale KBB vs K\n");
 
-    //couleur du roi dépouillé ("bare king")
+    //couleur du roi dÃ©pouillÃ© ("bare king")
     if(materiel[BLANC] == VAL_ROI)
         bare_king = BLANC;
     else
@@ -97,10 +94,9 @@ int eval_KBBK()
         }
     }
 
-    if(bare_king == BLANC)
+    
         eval = ((materiel[BLANC] - materiel[NOIR]) - (dist_rois + dist_fou));
-    else
-        eval = ((materiel[BLANC] - materiel[NOIR]) + (dist_rois + dist_fou));
+    
 
     if(side == BLANC)
         return eval;
